@@ -29,7 +29,7 @@ const initializeDb = async () => {
 
 initializeDb()
 
-const convertStateDbObjectToResponseObject = (dbObject) => {
+const convertStateDbObjectToResponseObject = dbObject => {
   return {
     stateId: dbObject.state_id,
     stateName: dbObject.state_name,
@@ -37,7 +37,7 @@ const convertStateDbObjectToResponseObject = (dbObject) => {
   }
 }
 
-const convertDistrictDbObjectToResponseObject = (dbObject) => {
+const convertDistrictDbObjectToResponseObject = dbObject => {
   return {
     districtId: dbObject.district_id,
     districtName: dbObject.district_name,
@@ -50,7 +50,7 @@ const convertDistrictDbObjectToResponseObject = (dbObject) => {
 }
 
 function authentication(request, response, next) {
-  let jwtToken;
+  let jwtToken
   const authHeader = request.headers['authorization']
   if (authHeader !== undefined) {
     jwtToken = authHeader.split(' ')[1]
@@ -72,7 +72,7 @@ function authentication(request, response, next) {
 
 app.post('/login/', async (request, response) => {
   const {username, password} = request.body
-  const selectUserQuery = `SELECT * FROM user WHERE username = ${username};`
+  const selectUserQuery = `SELECT * FROM user WHERE username = '${username}';`
   const databaseUser = await database.get(selectUserQuery)
   if (databaseUser === undefined) {
     response.status(401)
@@ -82,7 +82,6 @@ app.post('/login/', async (request, response) => {
       password,
       databaseUser.password,
     )
-
     if (isPasswordMatched === true) {
       const payload = {
         username: username,
@@ -101,70 +100,81 @@ app.get('/states/', authentication, async (request, response) => {
     SELECT
     *
     FROM
-    state;`
+    state`
   const stateArray = await database.all(getStateQuery)
   response.send(
     stateArray.map(each => convertDistrictDbObjectToResponseObject(each)),
   )
 })
 
-app.get("/states/:stateId/", authentication, async (request, response) =>{
-  const { stateId} = request.params;
+app.get('/states/:stateId/', authentication, async (request, response) => {
+  const {stateId} = request.params
   const getStateQuery = `
   SELECT 
   *
   FROM
   state
   WHERE
-  state_id = '${stateId}';`;
+  state_id = '${stateId}';`
 
-  const state = await database.get(getStateQuery);
-  response.send(convertStateDbObjectToResponseObject(state));
-});
+  const state = await database.get(getStateQuery)
+  response.send(convertStateDbObjectToResponseObject(state))
+})
 
-app.get("/districts/:districtId/", authentication, async (request, response) => {
-  const {districtId} = request.params;
-  const getDistrictQuery = `
+app.get(
+  '/districts/:districtId/',
+  authentication,
+  async (request, response) => {
+    const {districtId} = request.params
+    const getDistrictQuery = `
   SELECT 
   *
   FROM
   district
   WHERE
-  district_id = ${districtId}`;
+  district_id = '${districtId}'`
 
-  const district = await database.get(getDistrictQuery);
-  response.send(convertDistrictDbObjectToResponseObject(district));
-});
+    const district = await database.get(getDistrictQuery)
+    response.send(convertDistrictDbObjectToResponseObject(district))
+  },
+)
 
-app.post("/districts/", authentication, async (request, response) =>{
-  const {stateId, districtName, cases, active, deaths} = request.body;
+app.post('/districts/', authentication, async (request, response) => {
+  const {stateId, districtName, cases, active, deaths} = request.body
   const postDistrictQuery = `
   INSERT INTO 
   district (state_id, district_name, cases, active, deaths)
   VALUES
-  (${stateId}, ${districtName}, ${cases}, ${active}, ${deaths});`;
+  (${stateId}, ${districtName}, ${cases}, ${active}, ${deaths});`
 
-  await database.run(postDistrictQuery);
-  response.send("District Successfully Added")
-});
+  await database.run(postDistrictQuery)
+  response.send('District Successfully Added')
+})
 
-app.delete("/districts/:districtId/", authentication, async (request, response) =>{
-  const {districtId} = request.params;
-  const deleteDistrictQuery = `
+app.delete(
+  '/districts/:districtId/',
+  authentication,
+  async (request, response) => {
+    const {districtId} = request.params
+    const deleteDistrictQuery = `
   DELETE FROM
   district
   WHERE
-  district_id = ${districtId};`;
+  district_id = '${districtId}';`
 
-  await database.run(deleteDistrictQuery);
-  response.send("District Removed")
-});
+    await database.run(deleteDistrictQuery)
+    response.send('District Removed')
+  },
+)
 
-app.put("/districts/:districtId/", authentication, async (request, response) =>{
-  const {districtId} = request.params;
-  const { districtName, stateId, cases,cured, active, deaths} = request.body;
+app.put(
+  '/districts/:districtId/',
+  authentication,
+  async (request, response) => {
+    const {districtId} = request.params
+    const {districtName, stateId, cases, cured, active, deaths} = request.body
 
-  const updateDistrictQuery = `
+    const updateDistrictQuery = `
   UPDATE
   district
   SET
@@ -176,16 +186,19 @@ app.put("/districts/:districtId/", authentication, async (request, response) =>{
   deaths = '${deaths}'
   
   WHERE
-  district_id = ${districtId}`;
+  district_id = '${districtId}'`
 
-  await database.run(updateDistrictQuery);
-  response.send("District Details Updated")
+    await database.run(updateDistrictQuery)
+    response.send('District Details Updated')
+  },
+)
 
-});
-
-app.get("/states/:stateId/stats/", authentication, async (request, response) =>{
-  const {stateId} = request.params;
-  const getStateStatQuery = `
+app.get(
+  '/states/:stateId/stats/',
+  authentication,
+  async (request, response) => {
+    const {stateId} = request.params
+    const getStateStatQuery = `
   SELECT 
     SUM(cases),
     SUM(cured),
@@ -194,15 +207,16 @@ app.get("/states/:stateId/stats/", authentication, async (request, response) =>{
   FROM
     district
   WHERE
-    state_id = ${stateId}`;
-  
-  const stats = await database.get(getStateStatQuery);
-  response.send({
-    totalCases: stats["SUM(cases)"],
-    totalCured : stats["SUM(cured)"],
-    totalActive: stats["SUM(active)"],
-    totalDeaths: stats["SUM(deaths)"]
-  });
-});
+    state_id = '${stateId}'`
 
-module.exports = app;
+    const stats = await database.get(getStateStatQuery)
+    response.send({
+      totalCases: stats['SUM(cases)'],
+      totalCured: stats['SUM(cured)'],
+      totalActive: stats['SUM(active)'],
+      totalDeaths: stats['SUM(deaths)'],
+    })
+  },
+)
+
+module.exports = app
